@@ -1,90 +1,137 @@
-
 # Process Scheduling Algorithms Simulation
 
-CPU Scheduling is a process of determining which process will own a CPU for execution while another process is on hold. The main task of CPU scheduling is to make sure that whenever the CPU remains idle, the OS at least selects one of the processes available in the ready queue for execution.
+A single-CPU process scheduling simulator in C++. It runs eight classic scheduling algorithms on the same workload and uses Python and Matplotlib to plot how they compare.
 
-Assuming processes are scheduled on a single CPU. The objective of the project is to simulate the following eight algorithms and observe their performance under various performance metrics.
+![C++](https://img.shields.io/badge/C%2B%2B-00599C?style=flat-square&logo=cplusplus&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-charts-11557C?style=flat-square)
+![Linux](https://img.shields.io/badge/platform-Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
 
+## Overview
 
-- First Come First Serve
-- Shortest Job First Preemptive
-- Shortest Job First Non-Preemptive
-- Priority Preemptive
-- Priority Non-Preemptive
-- Round Robin
-- Multi-level Queue
-- Multi-level Feedback Queue
+CPU scheduling decides which ready process gets the CPU next. This project reads a list of processes (arrival time, burst time, priority) from a CSV file and simulates each algorithm on a single CPU. For every process it computes:
 
+- **Completion time (CT)**
+- **Turnaround time (TAT)** = CT − arrival time
+- **Waiting time (WT)** = TAT − burst time
+- **Response time (RT)**
 
-Once the simulation is done each of the algorithms would be compared based on the following parameters:
-- Average waiting time
-- Average response time
-- Average turnaround time
-- Average completion time
+The C++ simulators write per-process results to a temporary CSV file. Python scripts then plot charts for each algorithm, plus a set of comparison charts built from the averages across all algorithms.
 
+## Algorithms
 
+| Algorithm | Notes |
+| --- | --- |
+| First Come First Serve (FCFS) | Non-preemptive, in order of arrival |
+| Shortest Job First, non-preemptive (SJFN) | Shortest burst among arrived processes |
+| Shortest Job First, preemptive (SJFP) | Shortest remaining time first |
+| Priority, non-preemptive | Higher priority value is scheduled first |
+| Priority, preemptive | A higher-priority arrival preempts the running process |
+| Round Robin (RR) | Run with time quanta of 1, 2 and 3 |
+| Multilevel Queue (MLQ) | 3 Round Robin queues (quantum 2). A process is placed in queue `priority % 3`, and higher queues are served first |
+| Multilevel Feedback Queue (MLFQ) | 3 levels: two Round Robin levels (quantum 2) and a final FCFS level. New arrivals enter the top level and are demoted once their accumulated run time reaches the feedback threshold (2) |
 
-## Run Locally
+## Features
 
-Clone the project
+- One input file drives every algorithm, so the results are directly comparable.
+- Two charts per algorithm: a per-process line/scatter plot of CT, TAT, WT and RT, and a stacked bar chart.
+- Comparison bar charts of average CT, TAT, WT and RT across all algorithms, plus a grouped multi-bar chart.
+- A summary table of the averages printed to the terminal.
+
+## Tech stack
+
+- **Simulation:** C++
+- **Visualisation:** Python 3, Matplotlib, NumPy
+
+## Project structure
+
+```
+Process-Scheduling-Algorithms-Simulation/
+├── mainCPP.cpp              # Entry point: runs every algorithm and collects averages
+├── roundAndFcfs.cpp         # FCFS and Round Robin
+├── SJFN.cpp / SJFP.cpp      # Shortest Job First (non-preemptive / preemptive)
+├── priority.cpp             # Priority scheduling (non-preemptive / preemptive)
+├── multilevel.cpp           # Multilevel Queue
+├── multilevel-feedback.cpp  # Multilevel Feedback Queue
+├── graphPloat.py            # Per-algorithm line/scatter chart
+├── graphStackPlot.py        # Per-algorithm stacked bar chart
+├── graphBarPloat.py         # Cross-algorithm comparison charts + summary table
+├── process.csv              # Sample input
+└── graph/                   # Generated charts (sample output committed)
+```
+
+## Getting started
+
+### Prerequisites
+
+- Linux
+- `g++`, Python 3 with development headers, Matplotlib and NumPy
 
 ```bash
-  git https://github.com/mkk96/Process-Scheduling-Algorithms-Simulation.git
+sudo apt install g++ python3-dev python3-pip
+pip3 install matplotlib numpy
 ```
 
-Go to the project directory
+### Build
+
+`mainCPP.cpp` `#include`s the other `.cpp` files, so compile only that file. The sources include `<Python.h>`, so pass the Python include path:
 
 ```bash
-  cd Process-Scheduling-Algorithms-Simulatio
+git clone https://github.com/mkk96/Process-Scheduling-Algorithms-Simulation.git
+cd Process-Scheduling-Algorithms-Simulation
+g++ $(python3-config --includes) mainCPP.cpp -o main
 ```
 
-Install dependencies
+You can also give the path directly, for example `g++ -I /usr/include/python3.8 mainCPP.cpp -o main`.
+
+### Run
+
+Run from the repository root. The plotting scripts and the `graph/` folder are referenced by relative paths.
 
 ```bash
-  sudo apt install g++
-  sudo apt install python3-dev
-  pip3 install matplotlib
+./main process.csv
 ```
 
-Compile the Files
+Charts are written to `graph/`, and the table of averages is printed to the terminal.
 
-```bash
-  g++ -I /usr/include/python3.8 mainCPP.cpp -o main
+## Input format
+
+The input is a CSV file with no header row. Each line describes one process:
+
+```text
+PID,name,type,priority,arrival_time,burst_time
 ```
 
-Run the Files
+Example (from `process.csv`):
 
-```bash
-  ./main <inputFile.csv>
+```text
+0,Cattxodmfnf,C,67,22,1
+1,Ilwxybakmse,C,71,9,45
+2,Cytpnzestug,C,26,12,2
+3,Igchqocvfbh,C,96,28,80
+4,Isjhkfcrgxt,C,93,25,26
 ```
 
-Graph will be store in Graph Folder
+- PIDs should run from `0` to `n-1`, because they are used as array indices.
+- The multilevel schedulers only pick up rows whose `type` is `C`.
 
-## Input File Structure
+## Output
 
-CSV file with each row having `PID,name,type,Priority,AT,BT`
+| File(s) in `graph/` | Contents |
+| --- | --- |
+| `FCFS.jpeg`, `SJFN.jpeg`, `SJFP.jpeg`, `priority_NP.jpeg`, `priority_P.jpeg`, `RR_1s.jpeg`, `RR_2s.jpeg`, `RR_3s.jpeg`, `multilevel.jpeg`, `multilevel-feedback.jpeg` | Per-process CT / TAT / WT / RT for each algorithm |
+| `*_Stack.jpeg` | Stacked bar version of the same data |
+| `averageCT.jpeg`, `averageTAT.jpeg`, `averageWT.jpeg`, `averageRT.jpeg` | Average of each metric across algorithms |
+| `multiBar.jpeg` | All four averages side by side for every algorithm |
 
-eg.
-```
-  0,P1,C,67,22,1
-  1,P2,C,71,9,45
-  2,P3,C,26,12,2
-```
+Sample comparison chart (from the committed `graph/` output):
 
+![Average metrics per algorithm](graph/multiBar.jpeg)
 
-## Tech Stack
+## Context
 
-**Algorithm Simulation:** C++
+Built during the M.Tech programme at IIIT Hyderabad (2021).
 
-**Graph Generation:** Python, Matplotlib
+---
 
-
-## Author
-
-- [@Mukul Kumar](https://github.com/mkk96)
-
-
-## Feedback
-
-If you have any feedback, please reach out to us at one.end4@gmail.com
-
+Made by [Mukul Kumar](https://mkk96.github.io) · [GitHub](https://github.com/mkk96) · [LinkedIn](https://www.linkedin.com/in/mukul-kumar-60322616b/)
